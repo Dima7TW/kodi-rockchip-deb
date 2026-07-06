@@ -1,6 +1,6 @@
 # Warning to the reader. This produces a .deb package with stuff in /usr/local. If this scares you, stop reading.
 # It is in fact, non-debian packaging. Probably fpm would be a better choice?
-ARG BASE_IMAGE="debian:trixie"
+ARG BASE_IMAGE="ubuntu:24.04"
 FROM ${BASE_IMAGE} AS packager
 
 #### Dependencies. In batches; this is built under buildx and layers not published so we don't care about layer size.
