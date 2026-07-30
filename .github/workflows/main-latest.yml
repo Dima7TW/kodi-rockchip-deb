@@ -5,6 +5,10 @@ on:
   #push:
   #  branches: [ main ]
 
+permissions:
+  packages: write
+  contents: write
+
 jobs:
 
   prepare:
@@ -72,6 +76,32 @@ jobs:
           name: deb-${{ matrix.distro.id }}-ffmpeg-${{ matrix.ffmpeg.id }}
           path: out/*.deb
 
+      # Login to ghcr.io to push the container image
+      - name: Login to ghcr.io
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build ${{ matrix.arch.name }} ${{ matrix.distro.id }} (container image)
+        uses: docker/build-push-action@v7
+        timeout-minutes: 30
+        with:
+          target: containerized-kodi # floating stage in the Dockerfile
+          context: .
+          file: ./Dockerfile
+          platforms: linux/${{ matrix.arch.name }}
+          load: false
+          pull: false
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ matrix.distro.id }}-latest,ghcr.io/${{ github.repository }}:${{ matrix.distro.id }}-${{needs.prepare.outputs.created}}
+          build-args: |
+            PACKAGE_VERSION=${{needs.prepare.outputs.created}}
+            BASE_IMAGE=${{ matrix.distro.image }}
+            OS_ARCH=${{ matrix.arch.name }}
+            FFMPEG_BRANCH=${{ matrix.ffmpeg.branch }}
+            FFMPEG_ID=${{ matrix.ffmpeg.id }}
 
   release:
     needs: [ prepare, build ] # depend on the previous jobs...
