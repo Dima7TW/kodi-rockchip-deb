@@ -8,4 +8,4 @@ echo "Done!"
 ls -laht "${OUTPUT}"
 
 # containerized-kodi stage; that actually produces a container, not an output file
-docker buildx build --target "containerized-kodi" --progress=plain -t kodi:gbm-container .
+docker buildx build --target "containerized-kodi" --platform linux/arm64 --progress=plain -t kodi:gbm-container .
