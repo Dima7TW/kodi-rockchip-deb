@@ -19,34 +19,26 @@ RUN apt-get -y install libasound2-dev libass-dev libavahi-client-dev \
     libavahi-common-dev libbluetooth-dev libbluray-dev libbz2-dev libcdio-dev libcdio++-dev libp8-platform-dev libcrossguid-dev libcurl4-openssl-dev libcwiid-dev libdbus-1-dev  \
     libegl1-mesa-dev libenca-dev libexiv2-dev libflac-dev libfmt-dev libfontconfig-dev libfreetype6-dev libfribidi-dev libfstrcmp-dev libgcrypt-dev libgif-dev \
     libgles2-mesa-dev libgl1-mesa-dev libglu1-mesa-dev libgnutls28-dev libgpg-error-dev libgtest-dev libiso9660-dev libjpeg-dev liblcms2-dev libltdl-dev liblzo2-dev \
-    libmicrohttpd-dev libnfs-dev libogg-dev libpcre2-dev libplist-dev libpng-dev libpulse-dev libshairplay-dev libspdlog-dev libsqlite3-dev \
+    libmicrohttpd-dev libnfs-dev libogg-dev libpcre2-dev libplist-dev libpng-dev libpulse-dev libshairplay-dev libsmbclient-dev libspdlog-dev libsqlite3-dev \
     libssl-dev libtag1-dev libtiff5-dev libtinyxml-dev libtinyxml2-dev libudev-dev libunistring-dev libvorbis-dev  \
     libxslt1-dev libxt-dev rapidjson-dev zlib1g-dev default-jre libgbm-dev libinput-dev libxkbcommon-dev libcec-dev libmariadb-dev liblirc-dev # Removed: libva-dev libvdpau-dev libxmu-dev libxrandr-dev libdrm-dev
 
-# TODO:
 # New dep for kodi in 2025?
-# RUN apt-get -y install nlohmann-json3-dev
+RUN apt-get -y install nlohmann-json3-dev
 
 
 #### Git clones. Heavy stuff.
 SHELL ["/bin/bash", "-e", "-c"]
 WORKDIR /src
-RUN git -c advice.detachedHead=false clone https://gitlab.freedesktop.org/emersion/libdisplay-info.git libdisplay-info
-RUN git -c advice.detachedHead=false clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp
-RUN git -c advice.detachedHead=false clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga
-RUN git -c advice.detachedHead=false clone -b "7.1" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
+RUN git -c advice.detachedHead=false clone https://gitlab.freedesktop.org/emersion/libdisplay-info.git libdisplay-info && \
+    git -c advice.detachedHead=false clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp && \
+    git -c advice.detachedHead=false clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga && \
+    git -c advice.detachedHead=false clone -b "7.1" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
 
 #### Builds
 
 # We'll build into /usr/local, so zero that out to get a clean slate. Yeah, not too smart, but it works.
 RUN rm -rfv /usr/local/*
-
-# HACK 🤮 very old pcre3 - required for Omega; Piers fixed to use libcre2, but we're building Omega
-WORKDIR /src/pcre
-RUN wget "http://deb.debian.org/debian/pool/main/p/pcre3/pcre3_8.39.orig.tar.bz2"
-RUN tar -xvf pcre3_8.39.orig.tar.bz2
-WORKDIR /src/pcre/pcre-8.39
-RUN ./configure --prefix=/usr/local && make -j$(nproc) && make install
 
 # RKMPP
 WORKDIR /src/rkmpp/rkmpp_build
@@ -70,39 +62,20 @@ RUN pipetty ./configure --prefix=/usr/local --enable-gpl --enable-version3 --ena
 WORKDIR /src/libdisplay-info
 RUN mkdir build && cd build && meson setup --prefix=/usr/local --buildtype=release .. && ninja && ninja install
 
+# Clone Kodi; ARG invalidates the cache!
+ARG KODI_BRANCH="master"
+WORKDIR /src
+RUN git -c advice.detachedHead=false clone -b "${KODI_BRANCH}" --single-branch https://github.com/xbmc/xbmc.git kodi
+
 # In the beggining there was boogie PR https://github.com/xbmc/xbmc/pull/24431 -- we cherry-picked from that and life was good.
 # Then that PR got merged -- we got from master, and life was good.
 # Then, the whoile thing got reverted in https://github.com/xbmc/xbmc/pull/25864 - revision 9a6358ee823a92a2126354e0e579965c773cdff7
 # So now we revert the revert so Rockchip does the boogie again
-# Late 2025: boogie has a branch on Omega; grab that then rebase on upstream's Omega
-ARG KODI_BRANCH="Omega"
-ARG BOOGIE_BRANCH="omega_gbm_drm_dynamic_afbc_video_planes"
-WORKDIR /src
+# May'2026: boogie/reardonia/chewitt at it again: https://github.com/xbmc/xbmc/pull/27402 et al - thus plain "master"
 
-# Clone boogie's branch
-RUN git -c advice.detachedHead=false clone -b "${BOOGIE_BRANCH}" https://github.com/hbiyik/xbmc.git kodi
-
-WORKDIR /src/kodi
-# Config git
-RUN git config --global user.email "you@example.com" && git config --global user.name "Your Name"
-# Rebase hbiyik's branch onto xbmc/xbmc@Omega
-RUN git remote add upstream https://github.com/xbmc/xbmc.git && git fetch upstream "${KODI_BRANCH}"
-
-# Checkout upstream KODI_BRANCH
-RUN git checkout "upstream/${KODI_BRANCH}"
-RUN git switch -c "${KODI_BRANCH}-plus-${BOOGIE_BRANCH}"
-# Now reapply the boogie commits on top of that
-RUN git cherry-pick cfb130d42a8fce7fc6a12015e34a9df8388e47de
-RUN git cherry-pick ca63e568cf6b5d44652c1b187088c3a8f9675d0d
-RUN git cherry-pick 44966604207538e32cd40e365255828812eea51f
-RUN git log -n 10
-
-# Wait, this actually does work. TODO move to top later
-RUN apt-get -y install libsmbclient-dev
-
-# Kodi build. the --build step actually downloads things and that might fail, so retry it a few times.WORKDIR /src/kodi-build
+# Kodi build. the --build step actually downloads things and that might fail, so retry it a few times.
 WORKDIR /src/kodi-build
-RUN pipetty cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local -DCORE_PLATFORM_NAME=gbm -DAPP_RENDER_SYSTEM=gles -DENABLE_INTERNAL_FMT=ON -DENABLE_INTERNAL_FLATBUFFERS=ON -DCMAKE_CXX_FLAGS="-fpermissive"  && \
+RUN pipetty cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local -DCORE_PLATFORM_NAME=gbm -DAPP_RENDER_SYSTEM=gles -DENABLE_INTERNAL_FMT=ON -DENABLE_INTERNAL_FLATBUFFERS=ON && \
     pipetty cmake --build . -- -j$(nproc) || pipetty cmake --build . -- -j$(nproc) || pipetty cmake --build . -- -j$(nproc) && \
     pipetty make install
 
@@ -110,7 +83,7 @@ RUN pipetty cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local -DCORE_PLATFORM_NAME
 WORKDIR /src
 RUN git clone --branch Omega https://github.com/xbmc/visualization.shadertoy.git
 WORKDIR /src/visualization.shadertoy/build
-RUN cmake -DADDONS_TO_BUILD=visualization.shadertoy -DCMAKE_CXX_FLAGS="-fpermissive"  -DADDON_SRC_PREFIX=../.. -DCMAKE_INSTALL_PREFIX=/usr/local/share/kodi/addons -DCMAKE_BUILD_TYPE=Release -DPACKAGE_ZIP=1 /src/kodi/cmake/addons
+RUN cmake -DADDONS_TO_BUILD=visualization.shadertoy -DADDON_SRC_PREFIX=../.. -DCMAKE_INSTALL_PREFIX=/usr/local/share/kodi/addons -DCMAKE_BUILD_TYPE=Release -DPACKAGE_ZIP=1 /src/kodi/cmake/addons
 RUN make
 
 ### ------- packaging
@@ -138,7 +111,7 @@ ARG OS_ARCH="arm64"
 RUN echo "Architecture: ${OS_ARCH}" >> /pkg/src/debian/control
 
 # Create the Changelog, fake. ARG here invalidates the cache.
-ARG PACKAGE_VERSION="20250505"
+ARG PACKAGE_VERSION="20260513"
 RUN echo "kodi-rockchip-gbm (${PACKAGE_VERSION}) stable; urgency=medium" >> /pkg/src/debian/changelog && \
     echo "" >> /pkg/src/debian/changelog && \
     echo "  * Not a real changelog. Sorry." >> /pkg/src/debian/changelog && \
@@ -158,7 +131,7 @@ RUN file /pkg/*.deb && \
 
 # Now prepare the real output: the .deb for this release and arch.
 WORKDIR /artifacts
-RUN cp -v /pkg/*.deb kodi-${KODI_BRANCH}-rockchip-gbm_${OS_ARCH}_$(lsb_release -c -s).deb
+RUN cp -v /pkg/*.deb kodi-rockchip-gbm_${OS_ARCH}_$(lsb_release -c -s).deb
 
 # Final stage is just the output deb
 FROM scratch
