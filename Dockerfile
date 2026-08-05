@@ -1,6 +1,6 @@
 # Warning to the reader. This produces a .deb package with stuff in /usr/local. If this scares you, stop reading.
 # It is in fact, non-debian packaging. Probably fpm would be a better choice?
-ARG BASE_IMAGE="debian:trixie"
+ARG BASE_IMAGE="ubuntu:24.04"
 FROM ${BASE_IMAGE} AS packager
 
 #### Dependencies. In batches; this is built under buildx and layers not published so we don't care about layer size.
@@ -34,7 +34,7 @@ WORKDIR /src
 RUN git -c advice.detachedHead=false clone https://gitlab.freedesktop.org/emersion/libdisplay-info.git libdisplay-info
 RUN git -c advice.detachedHead=false clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp
 RUN git -c advice.detachedHead=false clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga
-RUN git -c advice.detachedHead=false clone -b "6.0" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
+RUN git -c advice.detachedHead=false clone -b "7.1" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
 
 #### Builds
 
