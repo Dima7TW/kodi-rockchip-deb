@@ -102,7 +102,7 @@ RUN apt-get -y install libsmbclient-dev
 
 # Kodi build. the --build step actually downloads things and that might fail, so retry it a few times.WORKDIR /src/kodi-build
 WORKDIR /src/kodi-build
-RUN pipetty cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local -DCORE_PLATFORM_NAME=gbm -DAPP_RENDER_SYSTEM=gles -DENABLE_INTERNAL_FMT=ON -DENABLE_INTERNAL_FLATBUFFERS=ON && \
+RUN pipetty cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local -DCORE_PLATFORM_NAME=gbm -DAPP_RENDER_SYSTEM=gles -DENABLE_INTERNAL_FMT=ON -DENABLE_INTERNAL_FLATBUFFERS=ON -DCMAKE_CXX_FLAGS="-fpermissive"  && \
     pipetty cmake --build . -- -j$(nproc) || pipetty cmake --build . -- -j$(nproc) || pipetty cmake --build . -- -j$(nproc) && \
     pipetty make install
 
@@ -110,7 +110,7 @@ RUN pipetty cmake ../kodi -DCMAKE_INSTALL_PREFIX=/usr/local -DCORE_PLATFORM_NAME
 WORKDIR /src
 RUN git clone --branch Omega https://github.com/xbmc/visualization.shadertoy.git
 WORKDIR /src/visualization.shadertoy/build
-RUN cmake -DADDONS_TO_BUILD=visualization.shadertoy -DADDON_SRC_PREFIX=../.. -DCMAKE_INSTALL_PREFIX=/usr/local/share/kodi/addons -DCMAKE_BUILD_TYPE=Release -DPACKAGE_ZIP=1 /src/kodi/cmake/addons
+RUN cmake -DADDONS_TO_BUILD=visualization.shadertoy -DCMAKE_CXX_FLAGS="-fpermissive"  -DADDON_SRC_PREFIX=../.. -DCMAKE_INSTALL_PREFIX=/usr/local/share/kodi/addons -DCMAKE_BUILD_TYPE=Release -DPACKAGE_ZIP=1 /src/kodi/cmake/addons
 RUN make
 
 ### ------- packaging
