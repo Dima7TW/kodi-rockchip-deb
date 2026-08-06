@@ -30,10 +30,17 @@ RUN apt-get -y install nlohmann-json3-dev
 #### Git clones. Heavy stuff.
 SHELL ["/bin/bash", "-e", "-c"]
 WORKDIR /src
+<<<<<<< HEAD
 RUN git -c advice.detachedHead=false clone https://gitlab.freedesktop.org/emersion/libdisplay-info.git libdisplay-info && \
     git -c advice.detachedHead=false clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp && \
     git -c advice.detachedHead=false clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga && \
     git -c advice.detachedHead=false clone -b "7.1" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
+=======
+RUN git -c advice.detachedHead=false clone https://gitlab.freedesktop.org/emersion/libdisplay-info.git libdisplay-info
+RUN git -c advice.detachedHead=false clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp
+RUN git -c advice.detachedHead=false clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga
+RUN git -c advice.detachedHead=false clone -b "6.0" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
+>>>>>>> parent of 51d912f (Changed default version ffmpeg from 6.0 to 7.1)
 
 #### Builds
 
