@@ -40,6 +40,9 @@ RUN git -c advice.detachedHead=false clone https://gitlab.freedesktop.org/emersi
 RUN git -c advice.detachedHead=false clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp
 RUN git -c advice.detachedHead=false clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga
 RUN git -c advice.detachedHead=false clone -b "6.0" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
+<<<<<<< HEAD
+>>>>>>> parent of 51d912f (Changed default version ffmpeg from 6.0 to 7.1)
+=======
 >>>>>>> parent of 51d912f (Changed default version ffmpeg from 6.0 to 7.1)
 
 #### Builds
