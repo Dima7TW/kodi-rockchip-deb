@@ -34,7 +34,7 @@ WORKDIR /src
 RUN git -c advice.detachedHead=false clone https://gitlab.freedesktop.org/emersion/libdisplay-info.git libdisplay-info
 RUN git -c advice.detachedHead=false clone -b jellyfin-mpp --depth=1 https://github.com/nyanmisaka/mpp.git rkmpp
 RUN git -c advice.detachedHead=false clone -b jellyfin-rga --depth=1 https://github.com/nyanmisaka/rk-mirrors.git rkrga
-RUN git -c advice.detachedHead=false clone -b "7.1" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
+RUN git -c advice.detachedHead=false clone -b "6.1" --depth=1 https://github.com/nyanmisaka/ffmpeg-rockchip.git ffmpeg
 
 #### Builds
 
@@ -62,7 +62,7 @@ RUN meson setup rkrga rkrga_build --prefix=/usr/local --libdir=lib --buildtype=r
 
 # ffmpeg, with rkxxx stuff. Nyanmisaka's fork, full of boogie goodness. You folks rock.
 WORKDIR /src/ffmpeg
-RUN pipetty ./configure --prefix=/usr/local --enable-gpl --enable-version3 --enable-libdrm --enable-rkmpp --enable-rkrga && \
+RUN pipetty ./configure --prefix=/usr/local --enable-gpl --enable-version3 --enable-libdrm --enable-rkmpp --enable-rkrga --enable-static --disable-shared && \
     pipetty make -j $(nproc) && \
     pipetty make install
 
